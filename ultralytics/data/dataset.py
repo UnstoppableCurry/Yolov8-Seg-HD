@@ -115,6 +115,18 @@ class YOLODataset(BaseDataset):
         # Read cache
         [cache.pop(k) for k in ('hash', 'version', 'msgs')]  # remove items
         labels = cache['labels']
+        # 遍历标签列表，检查每个标签的 'bboxes' 和 'segments'
+        # 如果其中一个不存在，则将该标签从列表中删除
+        labels_to_remove = []
+        for x in labels:
+            # print('lens-->',)
+            if len(x['bboxes']) != len(x['segments']):
+                labels_to_remove.append(x)
+
+        # 从标签列表中删除需要删除的标签
+        for x in labels_to_remove:
+            labels.remove(x)
+
         if not labels:
             LOGGER.warning(f'WARNING ⚠️ No images found in {cache_path}, training may not work correctly. {HELP_URL}')
         self.im_files = [lb['im_file'] for lb in labels]  # update im_files
@@ -168,8 +180,9 @@ class YOLODataset(BaseDataset):
         keypoints = label.pop('keypoints', None)
         bbox_format = label.pop('bbox_format')
         normalized = label.pop('normalized')
-        mask=label['mask']
-        label['instances'] = Instances(bboxes, segments, keypoints, bbox_format=bbox_format, normalized=normalized,mask=mask)
+        mask = label['mask']
+        label['instances'] = Instances(bboxes, segments, keypoints, bbox_format=bbox_format, normalized=normalized,
+                                       mask=mask)
         return label
 
     @staticmethod
