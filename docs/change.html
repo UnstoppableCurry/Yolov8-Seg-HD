@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>源码中的 HD 分割改动 · Yolov8-Seg-HD</title>
+  <meta name="description" content="根据 block.py、default.yaml 与 yolov8-seg.yaml 核对的掩码原型上采样与训练分辨率设置。不含精度结论。">
+  <link rel="canonical" href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/change.html">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0d4a62">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="源码中的 HD 分割改动 · Yolov8-Seg-HD">
+  <meta property="og:description" content="Proto 三次转置卷积上采样、mask_ratio=1、根目录 Segment 参数。">
+  <meta property="og:url" content="https://unstoppablecurry.github.io/Yolov8-Seg-HD/change.html">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">Yolov8-Seg-HD</a>
+      <nav class="nav" aria-label="主导航">
+        <a href="index.html">概览</a>
+        <a href="change.html" aria-current="page">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <h1>源码中能核对的 HD 改动</h1>
+    <p class="lede">对照对象：当前被包导入的模块，以及仓库内留存的 <code>*_1.py</code> / 包内官方风格 YAML。下面只描述张量路径与配置字面量，不推断「更好」或「更准」。</p>
+
+    <h2>1. <code>Proto</code>：三次 ×2 上采样</h2>
+    <p><code>ultralytics/nn/modules/head.py</code> 的 <code>Segment</code> 用 P3 特征调用 <code>self.proto(x[0])</code>。当前 <code>Proto</code>（<code>block.py</code>）为：</p>
+    <pre><code>cv1 → ConvTranspose2d(×2)
+cv2 → ConvTranspose2d(×2)
+cv3 → ConvTranspose2d(×2)
+cv4 → 输出通道 c2（掩码原型数）</code></pre>
+    <p>同文件里被注释掉的旧 <code>Proto</code>，以及 <code>block_1.py</code> 中仍生效的实现，是一次 <code>ConvTranspose2d(×2)</code> 后接两层卷积。P3 相对输入步幅为 8：一次 ×2 得到约 1/4 图；三次 ×2 得到约 1/1 图。这就是本 fork 名称里「HD」在结构上的对应点。</p>
+    <figure>
+      <svg viewBox="0 0 720 220" role="img" aria-labelledby="proto-title proto-desc">
+        <title id="proto-title">掩码原型空间尺寸示意（非推理结果）</title>
+        <desc id="proto-desc">示意图：P3 特征图经一次或三次二倍上采样后的相对尺寸，不是模型输出截图。</desc>
+        <rect x="0" y="0" width="720" height="220" fill="#fffdf8"/>
+        <text x="16" y="28" fill="#1c1915" font-size="16" font-family="sans-serif">结构示意 · 非本仓库输出</text>
+        <rect x="20" y="50" width="50" height="50" fill="#0d4a62"/>
+        <text x="20" y="120" fill="#4a453e" font-size="12" font-family="sans-serif">P3 ≈ 1/8</text>
+        <text x="80" y="78" fill="#1c1915" font-size="14" font-family="sans-serif">上游 Proto ×2</text>
+        <rect x="210" y="38" width="100" height="74" fill="#6b8f9c"/>
+        <text x="210" y="130" fill="#4a453e" font-size="12" font-family="sans-serif">原型 ≈ 1/4</text>
+        <text x="80" y="168" fill="#1c1915" font-size="14" font-family="sans-serif">本仓库 Proto ×2×3</text>
+        <rect x="210" y="150" width="200" height="50" fill="#0d4a62"/>
+        <text x="420" y="180" fill="#4a453e" font-size="12" font-family="sans-serif">原型 ≈ 1/1</text>
+      </svg>
+      <figcaption>手绘比例示意，仅帮助阅读步幅关系，<strong>不是</strong>训练曲线或分割可视化。</figcaption>
+    </figure>
+
+    <h2>2. 训练掩码不下采样</h2>
+    <p><code>ultralytics/cfg/default.yaml</code> 写明 <code>mask_ratio: 1</code>。同仓库 <code>default_1.yaml</code> 仍为 <code>mask_ratio: 4</code>。数据管线 <code>Format(..., mask_ratio=hyp.mask_ratio)</code> 会按该比值缩小多边形栅格。比值为 1 表示训练用掩码按配置保持与图像同分辨率（仍受 <code>imgsz</code> 等上游几何变换约束）。</p>
+
+    <h2>3. 根目录分割 YAML 的 <code>Segment</code> 参数</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>YAML 字面量对照（不是性能表）</caption>
+        <thead>
+          <tr>
+            <th scope="col">文件</th>
+            <th scope="col">最后一层</th>
+            <th scope="col">按 <code>Segment(nc, nm, npr)</code> 阅读</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>yolov8-seg.yaml</code>（仓库根）</td>
+            <td><code>Segment, [nc, 4, 32]</code>，<code>nc: 13</code></td>
+            <td>掩码系数通道 <code>nm=4</code>，原型通道 <code>npr=32</code></td>
+          </tr>
+          <tr>
+            <td><code>ultralytics/cfg/models/v8/yolov8-seg.yaml</code></td>
+            <td><code>Segment, [nc, 32, 256]</code>，<code>nc: 11</code></td>
+            <td>常见上游取值 <code>nm=32</code>，<code>npr=256</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>train.py</code> 调用的是 <code>./yolov8n-seg.yaml</code>（带尺度后缀的写法）。根目录实际文件名是 <code>yolov8-seg.yaml</code>。本页不假设训练入口在未改路径时一定能找到模型文件。</p>
+
+    <h2>4. 推理侧已打开的上游开关</h2>
+    <p><code>default.yaml</code> 中 <code>retina_masks: True</code>。这是 Ultralytics 已有选项，用于按更高分辨率恢复掩码，不是本仓库独有算子。本页没有延迟或显存测量。</p>
+
+    <h2>明确不是评测结论的部分</h2>
+    <ul>
+      <li><code>head.py</code> 里有注释掉的导出/部署 <code>forward</code>，并指向外部 ncnn-android 项目。注释代码不能当作已验证的移动端实现。</li>
+      <li><code>block.py</code> 的 <code>Proto</code> 与 <code>ProtoBack</code> 结构相同；<code>Segment</code> 只实例化 <code>Proto</code>。</li>
+      <li>更高分辨率掩码会增加计算量，但仓库没有给出 FPS、mAP 或边缘质量数字。</li>
+    </ul>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <nav class="footer-nav" aria-label="页脚">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+        <a href="https://github.com/UnstoppableCurry/Yolov8-Seg-HD">GitHub 仓库</a>
+      </nav>
+      <p>静态说明，无后端。页面不包含评测数字。</p>
+    </div>
+  </footer>
+</body>
+</html>

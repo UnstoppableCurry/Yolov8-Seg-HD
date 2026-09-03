@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yolov8-Seg-HD 项目说明</title>
+  <meta name="description" content="Yolov8-Seg-HD 是基于 Ultralytics YOLOv8（约 8.0.170）的分割训练分支。本页只依据仓库 README 与源码说明改动，不含未经验证的精度或结果图。">
+  <link rel="canonical" href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0d4a62">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="Yolov8-Seg-HD 项目说明">
+  <meta property="og:description" content="基于 README 与源码的诚实说明：高分辨率分割 Proto、数据约定与限制。不是效果展示页。">
+  <meta property="og:url" content="https://unstoppablecurry.github.io/Yolov8-Seg-HD/">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "Yolov8-Seg-HD",
+    "description": "Ultralytics YOLOv8 分割训练分支。页面内容仅来自本仓库 README 与源码，不含评测数字。",
+    "codeRepository": "https://github.com/UnstoppableCurry/Yolov8-Seg-HD",
+    "url": "https://unstoppablecurry.github.io/Yolov8-Seg-HD/",
+    "programmingLanguage": "Python",
+    "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+    "inLanguage": "zh-Hans",
+    "isBasedOn": "https://github.com/ultralytics/ultralytics"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">Yolov8-Seg-HD</a>
+      <nav class="nav" aria-label="主导航">
+        <a href="index.html" aria-current="page">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <h1>Yolov8-Seg-HD 项目说明</h1>
+    <p class="lede">这是 <a href="https://github.com/UnstoppableCurry/Yolov8-Seg-HD">UnstoppableCurry/Yolov8-Seg-HD</a> 的静态说明页。仓库是 Ultralytics YOLO 的训练向 fork，包版本字符串为 <code>8.0.170</code>（见 <code>ultralytics/__init__.py</code>）。</p>
+    <p class="meta">预定发布地址：<a href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/">https://unstoppablecurry.github.io/Yolov8-Seg-HD/</a></p>
+
+    <aside class="callout" aria-label="证据范围">
+      <strong>证据范围</strong>
+      仓库 README 很短，没有本项目的结果截图、日志或评测表。下列内容只复述 README 与可读源码。本页<strong>不提供</strong>准确率、速度、数据集规模、客户或产品输出。作者写在 README 里的目标（细粒度、边缘敏感、可在移动设备实时运行）视为<strong>意图陈述</strong>，本仓库没有可核对的运行证据。
+    </aside>
+
+    <h2>作者在 README 中写了什么</h2>
+    <ul>
+      <li>用途：训练细粒度、边缘敏感、高清的端到端分割检测算法，并希望能在移动设备上实时运行。</li>
+      <li>API：声称与当时 Ultralytics 用法对齐；不支持上游此后新增的一些能力（README 举例：可视化、旋转）。作者将其视为与 <strong>2023 年左右</strong> 的 Ultralytics 一致。</li>
+      <li>取向：相对官方「更简单的 API」，作者称这个 fork 对开发者改结构更友好，对一般调用者不那么友好。</li>
+      <li>数据：训练/验证目录下同时放 <code>images</code>、<code>labels</code>（<code>.txt</code>）和 <code>label</code>（<code>.png</code>）；README 要求 PNG 与 TXT 对应，并称 TXT 轮廓对应二值图上的白色区域。</li>
+    </ul>
+
+    <h2>源码里能核对的「HD」差异</h2>
+    <p>与同仓库里未改动的 <code>Proto</code> 副本（<code>ultralytics/nn/modules/block_1.py</code>）以及官方常见实现相比，当前被导入的 <code>ultralytics/nn/modules/block.py</code> 把掩码原型上采样从 <strong>1 次 ×2</strong> 改成 <strong>3 次 ×2</strong>。YOLOv8-seg 的原型输入来自 P3（步幅 8），三次上采样后空间尺寸约为输入图的 1:1。这是本页能从源码直接读出的高分辨率分割改动。</p>
+    <p>配套默认项：<code>ultralytics/cfg/default.yaml</code> 中 <code>mask_ratio: 1</code>（上游常见默认多为 4）；根目录 <code>yolov8-seg.yaml</code> 的 <code>Segment</code> 参数为 <code>[nc, 4, 32]</code>（掩码系数通道 4、原型通道 32），与包内 <code>ultralytics/cfg/models/v8/yolov8-seg.yaml</code> 的 <code>[nc, 32, 256]</code> 不同。详见 <a href="change.html">源码改动</a>。</p>
+
+    <h2>图：上游样例，不是本仓库结果</h2>
+    <figure>
+      <p><span class="badge">Upstream / sample</span></p>
+      <img src="assets/upstream/bus.jpg" width="810" height="1080" alt="Ultralytics 上游公共样例：街景中的巴士。不是本仓库的训练或推理输出。">
+      <figcaption>Ultralytics 公共样例图 <code>im/bus.jpg</code>（见 <code>docs/assets/upstream/ATTRIBUTION.txt</code>）。<strong>不是</strong> Yolov8-Seg-HD 的预测、训练可视化或精度证明。</figcaption>
+    </figure>
+    <p class="sample">本仓库没有项目专用结果图。若你在其他页面看到 Ultralytics 风格配图，一律按上游样例理解。</p>
+
+    <h2>本页不覆盖的内容</h2>
+    <ul>
+      <li>没有公布可复现的公开数据集；<code>coco128-seg-seal.yaml</code> 与 <code>train.py</code> 指向本机 Windows 路径，数据不在本仓库。</li>
+      <li>根目录有 <code>yolov8n.pt</code>，文件名是检测权重，本页不把它当作分割训练成果。</li>
+      <li>许可证头为 AGPL-3.0；仓库根目录没有单独的 LICENSE 文件。</li>
+    </ul>
+    <p>继续阅读：<a href="usage.html">用法与数据约定</a> · <a href="notes.html">目录结构与限制</a></p>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <nav class="footer-nav" aria-label="页脚">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+        <a href="https://github.com/UnstoppableCurry/Yolov8-Seg-HD">GitHub 仓库</a>
+        <a href="https://github.com/ultralytics/ultralytics">上游 Ultralytics</a>
+      </nav>
+      <p>静态说明，无后端。源码文件头标注 AGPL-3.0。页面不包含评测数字。</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>仓库结构与限制 · Yolov8-Seg-HD</title>
+  <meta name="description" content="Yolov8-Seg-HD 目录树与已知限制：本机路径、重复文件、无项目结果图、Pages 只发布 docs/。">
+  <link rel="canonical" href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/notes.html">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0d4a62">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="仓库结构与限制 · Yolov8-Seg-HD">
+  <meta property="og:description" content="目录说明与诚实限制，无客户或基准数据。">
+  <meta property="og:url" content="https://unstoppablecurry.github.io/Yolov8-Seg-HD/notes.html">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">Yolov8-Seg-HD</a>
+      <nav class="nav" aria-label="主导航">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html" aria-current="page">结构与限制</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <h1>仓库结构与限制</h1>
+
+    <h2>顶层与主要包</h2>
+    <pre class="tree"><code>Yolov8-Seg-HD/
+  README.md                 作者短说明与数据目录示意
+  train.py                  本机路径的训练示例
+  coco128-seg-seal.yaml     本机 path + names
+  yolov8-seg.yaml           根目录分割结构（Segment [nc, 4, 32]）
+  yolov8n.pt                仓库内权重文件（检测命名）
+  ultralytics/              8.0.170 风格的包，含分割改动
+    nn/modules/block.py     当前 Proto（三次上采样）
+    nn/modules/head.py      Segment 调用 Proto
+    cfg/default.yaml        mask_ratio: 1 等
+    data/dataset.py         TXT 缓存；PNG 路径行被注释
+    yolo/                   仅有子包占位，不是完整旧引擎
+  docs/                     本静态站（GitHub Pages 只发布此目录）</code></pre>
+    <p>包内还有大量 <code>*_1.py</code> / <code>*_1.yaml</code>。它们未被 <code>ultralytics/nn/modules/__init__.py</code> 等入口导入。阅读改动时以不带 <code>_1</code> 的文件为准；<code>_1</code> 仅适合当对照副本。</p>
+    <p><code>ultralytics/cfg/models/</code> 仍带有检测、分割、P6 等 YAML，以及 tracker 配置。这是上游包布局的残留，不表示本说明页覆盖那些任务的评测。</p>
+
+    <h2>限制（均能在仓库内核对）</h2>
+    <ul>
+      <li><strong>没有本项目结果图。</strong> 说明页里的巴士图是 Ultralytics 上游样例。</li>
+      <li><strong>没有可引用的指标。</strong> 未发现 val 日志、论文表或公开排行榜记录。</li>
+      <li><strong>数据不在仓库中。</strong> 配置指向 <code>E:\...</code> 一类路径。</li>
+      <li><strong>训练脚本不可移植。</strong> <code>train.py</code> 依赖本机权重、TkAgg 与 <code>yolov8n-seg.yaml</code> 文件名。</li>
+      <li><strong>README 的 PNG 约定与当前 Dataset 实现不一致</strong>（见 <a href="usage.html">用法</a>）。</li>
+      <li><strong>与「最新 Ultralytics」不等价。</strong> README 已写明可视化、旋转等后续特性不支持。</li>
+      <li><strong>移动端实时性未验证。</strong> 仅有作者目标与注释掉的导出函数。</li>
+      <li><strong>工程完整度。</strong> 无根 LICENSE 文件、无依赖锁文件、无测试套件覆盖训练；<code>ultralytics/yolo</code> 基本是空壳。</li>
+      <li><strong>权重文件。</strong> Pages 工作流只上传 <code>docs/</code>，不会发布 <code>yolov8n.pt</code> 或 Python 源码。</li>
+    </ul>
+
+    <h2>本静态站</h2>
+    <p>文件在 <code>docs/</code>。官方 GitHub Actions 工作流把该目录部署到 <a href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/">https://unstoppablecurry.github.io/Yolov8-Seg-HD/</a>。站点无表单、无第三方脚本、无跟踪。</p>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <nav class="footer-nav" aria-label="页脚">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+        <a href="https://github.com/UnstoppableCurry/Yolov8-Seg-HD">GitHub 仓库</a>
+      </nav>
+      <p>静态说明，无后端。页面不包含评测数字。</p>
+    </div>
+  </footer>
+</body>
+</html>

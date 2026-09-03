@@ -1,0 +1,5 @@
+bus.jpg
+Source: Ultralytics public sample image
+https://github.com/ultralytics/assets (path: im/bus.jpg)
+This file is an upstream sample, not an output of Yolov8-Seg-HD.
+License of the upstream project: AGPL-3.0 (see Ultralytics).

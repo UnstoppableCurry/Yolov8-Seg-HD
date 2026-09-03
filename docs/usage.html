@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用法与数据约定 · Yolov8-Seg-HD</title>
+  <meta name="description" content="按 README 与 train.py 复述的数据目录和训练入口。路径是作者本机示例，不是可下载数据集。">
+  <link rel="canonical" href="https://unstoppablecurry.github.io/Yolov8-Seg-HD/usage.html">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0d4a62">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="用法与数据约定 · Yolov8-Seg-HD">
+  <meta property="og:description" content="README 中的 images / labels / label 目录约定，以及仓库内训练脚本的字面用法。">
+  <meta property="og:url" content="https://unstoppablecurry.github.io/Yolov8-Seg-HD/usage.html">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">Yolov8-Seg-HD</a>
+      <nav class="nav" aria-label="主导航">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html" aria-current="page">用法</a>
+        <a href="notes.html">结构与限制</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <h1>用法与数据约定</h1>
+    <p class="lede">README 声称调用方式与当时 Ultralytics 对齐（<code>from ultralytics import YOLO</code> 一类 API）。仓库没有独立的安装文档或 <code>pyproject.toml</code> / <code>setup.py</code>。以下只整理仓库里写明的目录和脚本。</p>
+
+    <h2>README 中的数据目录</h2>
+    <pre><code>train/
+  images/   1.jpg, 2.jpg
+  labels/   1.txt, 2.txt
+  label/    1.png, 2.png
+val/
+  images/
+  labels/
+  label/</code></pre>
+    <ul>
+      <li>README：<code>label</code> 中的 PNG 必须与 <code>labels</code> 中的 TXT 对应。</li>
+      <li>README：TXT 轮廓「其实就是二值图上绘制的白色区域」。</li>
+    </ul>
+    <aside class="callout" aria-label="加载器现状">
+      <strong>源码与 README 并不完全对齐</strong>
+      <code>ultralytics/data/dataset.py</code> 仍走 YOLO 多边形 TXT 缓存；构造标签时 <code>mask=None</code>。把 PNG 路径写成 <code>labels → label</code>、<code>txt → png</code> 的那一行是<strong>注释掉的</strong>。因此：README 描述了 PNG 约定，当前扫描逻辑不能被说成「已经读取 PNG 监督」。
+    </aside>
+
+    <h2>仓库里的训练入口</h2>
+    <p><code>train.py</code> 字面内容（路径已是作者机器上的绝对路径，<strong>不能直接在其他环境运行</strong>）：</p>
+    <ul>
+      <li>设置 <code>matplotlib</code> 后端为 <code>TkAgg</code>。</li>
+      <li><code>YOLO('./yolov8n-seg.yaml').load(&lt;本机 best.pt&gt;)</code>。</li>
+      <li><code>model.train(data='./coco128-seg-seal.yaml', epochs=200, imgsz=640, resume=True)</code>。</li>
+    </ul>
+    <p><code>coco128-seg-seal.yaml</code> 的 <code>path</code> 同样是本机目录；<code>train</code>/<code>val</code> 相对路径为 <code>train/images</code>、<code>val/images</code>。类别名写在该 YAML 的 <code>names</code> 里（印章相关中文名，13 类，与根目录 <code>yolov8-seg.yaml</code> 的 <code>nc: 13</code> 一致）。YAML 头部仍留有 Ultralytics COCO128-seg 说明注释，但实际 <code>path</code> 已改成本机数据，<strong>本仓库不包含这些图像</strong>。</p>
+
+    <h2>调用形态（与上游同年份文档同类）</h2>
+    <p>在已安装本仓库 <code>ultralytics</code> 包的前提下，上游式用法在源码中仍然存在，例如构造 <code>YOLO</code> 后 <code>train</code>。具体依赖、CUDA、以及官方后来增加的可视化 / OBB 等，README 已声明不支持或不等价于「最新 Ultralytics」。本页不提供未在仓库出现的命令行教程，以免编造可运行步骤。</p>
+
+    <h2>默认训练超参数里能看见的字面值</h2>
+    <p>摘自 <code>ultralytics/cfg/default.yaml</code>（不是一次已完成实验的记录）：<code>epochs: 200</code>，<code>batch: 8</code>，<code>imgsz: 640</code>，<code>device: 0</code>，<code>workers: 0</code>，<code>resume: True</code>，<code>mask_ratio: 1</code>，<code>overlap_mask: True</code>，<code>retina_masks: True</code>。</p>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <nav class="footer-nav" aria-label="页脚">
+        <a href="index.html">概览</a>
+        <a href="change.html">源码改动</a>
+        <a href="usage.html">用法</a>
+        <a href="notes.html">结构与限制</a>
+        <a href="https://github.com/UnstoppableCurry/Yolov8-Seg-HD">GitHub 仓库</a>
+      </nav>
+      <p>静态说明，无后端。页面不包含评测数字。</p>
+    </div>
+  </footer>
+</body>
+</html>

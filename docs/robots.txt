@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://unstoppablecurry.github.io/Yolov8-Seg-HD/sitemap.xml
